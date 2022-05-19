@@ -1,0 +1,91 @@
+#include <WiFiClientSecure.h>
+
+const char* ssid = "smm";
+const char* password =  "ххххххххххххх";
+const char*  server = "admin.subbnet.ru/api/post?userId=1";  // Server URL
+
+const char* ca_cert= \
+"-----BEGIN CERTIFICATE-----\n" \
+"MIIFJjCCBA6gAwIBAgISBMQKjlKEB64ggAQt3+6IhmsnMA0GCSqGSIb3DQEBCwUA\n" \
+"MDIxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQD\n" \
+"EwJSMzAeFw0yMjA1MTgxNTU0MTJaFw0yMjA4MTYxNTU0MTFaMBsxGTAXBgNVBAMT\n" \
+"EGFkbWluLnN1YmJuZXQucnUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB\n" \
+"AQC0NuWf9gNUYqPBfGiORwITLVLnuaHJLiEMfMklvp/KHv0UoJdmjqpPLs6WTNus\n" \
+"PN354O5YKhbH1Pl5ZGUzvIg4C7R9LZLE2e6FHxvvv4BcbE0/dilwGJRTzjxrdw3N\n" \
+"+Xzln6WmoZ7vdpe5PuZWWugxe1gFyukmWHJqZ6kyTkKGrG5sBWqRmSe5WFMxDKRW\n" \
+"4YEbuTwZzYU6SbjwYaXDScTP16IooSUYkSpp2KOGhbKk+yjrvRyHxPrv9aQzR71L\n" \
+"cszDHEN1mC5u1CMi31F7mHZ6Q167mBpteGeKiJJeLs5+IDGMLjy3Idjx9l09vbj9\n" \
+"wy2dYeB1LHsfVY0fQeS67iilAgMBAAGjggJLMIICRzAOBgNVHQ8BAf8EBAMCBaAw\n" \
+"HQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMAwGA1UdEwEB/wQCMAAwHQYD\n" \
+"VR0OBBYEFMF9pNEW113zAKKzFIuLjWgqn4OoMB8GA1UdIwQYMBaAFBQusxe3WFbL\n" \
+"rlAJQOYfr52LFMLGMFUGCCsGAQUFBwEBBEkwRzAhBggrBgEFBQcwAYYVaHR0cDov\n" \
+"L3IzLm8ubGVuY3Iub3JnMCIGCCsGAQUFBzAChhZodHRwOi8vcjMuaS5sZW5jci5v\n" \
+"cmcvMBsGA1UdEQQUMBKCEGFkbWluLnN1YmJuZXQucnUwTAYDVR0gBEUwQzAIBgZn\n" \
+"gQwBAgEwNwYLKwYBBAGC3xMBAQEwKDAmBggrBgEFBQcCARYaaHR0cDovL2Nwcy5s\n" \
+"ZXRzZW5jcnlwdC5vcmcwggEEBgorBgEEAdZ5AgQCBIH1BIHyAPAAdgBGpVXrdfqR\n" \
+"IDC1oolp9PN9ESxBdL79SbiFq/L8cP5tRwAAAYDYF2MaAAAEAwBHMEUCIEyS4gC1\n" \
+"B2wyMgPK/gZQdTSRrDDDDuPUCshvFcEtEJe5AiEA2+6rhMJK9GbrWakbhCcTgxx4\n" \
+"H4DwPgX+gx51JNKLWM0AdgDfpV6raIJPH2yt7rhfTj5a6s2iEqRqXo47EsAgRFwq\n" \
+"cwAAAYDYF2TpAAAEAwBHMEUCIQDfq/sxnK125Lq41mJGJafL57JcHVZj1NkSHrKr\n" \
+"usVg/gIgYovvnF3hlwddDSUMl9P98eTRrDxy4V0q7e+ZK8SyQngwDQYJKoZIhvcN\n" \
+"AQELBQADggEBAKRvHHuUNci3iQZ07UCAT/qLksgOwfUVQjivZ5AUTokfNNS1Bspf\n" \
+"XnuPHQbLKeispz8wEioKKK9iURkNNMkKFfiCY+XScZFi0lhHHt/arXpLYSGtxguS\n" \
+"AhQ2z6AAuIqNuv+Eq3FW6vH+fG6ainCsrTycAs042GZsp5kS0bHjk+rxbn78OGA/\n" \
+"RUjVgPExERAJQnLTYVTiBy4CxTz3Bo2aHeRGaPV/3DFmaObDCumxt+rIghPDJ5rh\n" \
+"OhEoWz4Wje9qhc30/69AvPJXiP2M9HB2BA9MevWqSc0As2cdHgKjaZhO6cvHrgdV\n" \
+"g39Hnl896ekCsQoi8EpSzZiq1i85GactIJU=\n" \
+"-----END CERTIFICATE-----\n";
+
+/* create an instance of WiFiClientSecure */
+WiFiClientSecure client;
+
+void setup() {
+    Serial.begin(115200);
+
+    WiFi.begin(ssid, password);
+
+    /* waiting for WiFi connect */
+    while (WiFi.status() != WL_CONNECTED) {
+        Serial.print(".");
+        delay(100);
+    }
+
+    Serial.print("Connected to ");
+    Serial.println(ssid);
+
+    /* set SSL/TLS certificate */
+    client.setCACert(ca_cert);
+
+    Serial.println("Connect to server via port 443");
+    if (!client.connect(server, 443)){
+        Serial.println("Connection failed!");
+    } else {
+        Serial.println("Connected to server!");
+        /* create HTTP request */
+        client.println("GET https://www.howsmyssl.com/a/check HTTP/1.0");
+        client.println("Host: www.howsmyssl.com");
+        client.println("Connection: close");
+        client.println();
+
+        Serial.print("Waiting for response ");
+        while (!client.available()){
+            delay(50); //
+            Serial.print(".");
+        }  
+        /* if data is available then receive and print to Terminal */
+        while (client.available()) {
+            char c = client.read();
+            Serial.write(c);
+        }
+
+        /* if the server disconnected, stop the client */
+        if (!client.connected()) {
+            Serial.println();
+            Serial.println("Server disconnected");
+            client.stop();
+        }
+  }
+}
+
+void loop() {
+}
