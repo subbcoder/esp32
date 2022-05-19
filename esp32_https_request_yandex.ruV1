@@ -1,0 +1,83 @@
+#include <WiFiClientSecure.h>
+
+const char* ssid = "smm";
+const char* password =  "xxxxxxxxxxxxxxxxxx";
+const char*  server = "yandex.ru";
+
+const char* ca_cert= \
+"-----BEGIN CERTIFICATE-----\n" \
+"MIIDpzCCAo+gAwIBAgIQdR4/U+MYWTPpXwjs7q0ClzANBgkqhkiG9w0BAQwFADBX\n" \
+"MQswCQYDVQQGEwJCRTEZMBcGA1UEChMQR2xvYmFsU2lnbiBudi1zYTEQMA4GA1UE\n" \
+"CxMHUm9vdCBDQTEbMBkGA1UEAxMSR2xvYmFsU2lnbiBSb290IENBMB4XDTE5MDYx\n" \
+"OTAwMDAwMFoXDTI4MDEyODEyMDAwMFowUDEkMCIGA1UECxMbR2xvYmFsU2lnbiBF\n" \
+"Q0MgUm9vdCBDQSAtIFI1MRMwEQYDVQQKEwpHbG9iYWxTaWduMRMwEQYDVQQDEwpH\n" \
+"bG9iYWxTaWduMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAER0UOlvt9Xb/pOdEh+J8L\n" \
+"ttV7HpI6SFkc8GIxLcB6KP4ap1yztsyX50XUWPrRd21DosCHZTQKH3rd6zwzocWd\n" \
+"TaRvQZU4f8kehOvRnkmSh5SHDDqFSmafnVmTTZdhBoZKo4IBIjCCAR4wDgYDVR0P\n" \
+"AQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFD3mKUib6gfKIURK\n" \
+"Jt5u3tKD0J9ZMB8GA1UdIwQYMBaAFGB7ZhpFDZfKiVAvfQTNNKj//P1LMD0GCCsG\n" \
+"AQUFBwEBBDEwLzAtBggrBgEFBQcwAYYhaHR0cDovL29jc3AuZ2xvYmFsc2lnbi5j\n" \
+"b20vcm9vdHIxMDMGA1UdHwQsMCowKKAmoCSGImh0dHA6Ly9jcmwuZ2xvYmFsc2ln\n" \
+"bi5jb20vcm9vdC5jcmwwRwYDVR0gBEAwPjA8BgRVHSAAMDQwMgYIKwYBBQUHAgEW\n" \
+"Jmh0dHBzOi8vd3d3Lmdsb2JhbHNpZ24uY29tL3JlcG9zaXRvcnkvMA0GCSqGSIb3\n" \
+"DQEBDAUAA4IBAQBQ11FVSLT8GKzvaFvpSX0w+HxmfvrzTyL4O3FkaxnrNVtzxu/M\n" \
+"VkQBDYlswOnpMjaphFtnWBvNWrPRA60hNYGyGuNYe5dGDoky/9mPlnWXCNydRQJ3\n" \
+"7Nph4umG4yvqrxhnrsjW6NKca9ccoAw0rJEUDd1cYSakNgtPSf+tD/9bkN7E5fsu\n" \
+"QWUkqgT+sB7Mlx1rxBULK6rPidx2fbgKwTzNXfTTGc8JuEX+YN3jG2dkMhaOdk7y\n" \
+"CsAqHmzJ/BIXWwWrGgLozflb7j9n8CSOqwO3ISlr5Ztjqx2YJ4LWb25rHp/pATLl\n" \
+"iBujmo+JS32LF0qcFLpp2+dCHc1T9qcvjmZy\n" \
+"-----END CERTIFICATE-----\n";
+
+/* create an instance of WiFiClientSecure */
+WiFiClientSecure client;
+
+void setup() {
+    Serial.begin(115200);
+
+    WiFi.begin(ssid, password);
+
+    /* waiting for WiFi connect */
+    while (WiFi.status() != WL_CONNECTED) {
+        Serial.print(".");
+        delay(100);
+    }
+
+    Serial.print("Connected to ");
+    Serial.println(ssid);
+
+    /* set SSL/TLS certificate */
+    client.setCACert(ca_cert);
+
+    Serial.println("Connect to server via port 443");
+    if (!client.connect(server, 443)){
+        Serial.println("Connection failed!");
+    } else {
+        Serial.println("Connected to server!");
+        /* create HTTP request */
+        client.println("GET https://www.howsmyssl.com/a/check HTTP/1.0");
+        client.println("Host: www.howsmyssl.com");
+        client.println("Connection: close");
+        client.println();
+
+        Serial.print("Waiting for response ");
+        while (!client.available()){
+            delay(50); //
+            Serial.print(".");
+        }  
+        /* if data is available then receive and print to Terminal */
+        while (client.available()) {
+            char c = client.read();
+            Serial.write(c);
+        }
+
+        /* if the server disconnected, stop the client */
+        if (!client.connected()) {
+            Serial.println();
+            Serial.println("Server disconnected");
+            client.stop();
+        }
+  }
+}
+
+void loop() {
+}
