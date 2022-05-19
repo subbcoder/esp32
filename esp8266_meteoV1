@@ -1,3 +1,4 @@
+// https://robotchip.ru/meteostantsiya-na-bme280-i-esp8266/
 #include <ESP8266WiFi.h>                                // Подключаем библиотеку ESP8266WiFi
 #include <Wire.h>                                       // Подключаем библиотеку Wire
 #include <Adafruit_BME280.h>                            // Подключаем библиотеку Adafruit_BME280
