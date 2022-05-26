@@ -14,7 +14,7 @@ Ticker tickerSetHigh;
 Adafruit_BME280 bme; // I2C
 
 const char* ssid = "smm";
-const char* password =  "xxxxxxxxxxx";
+const char* password =  "xxxxxxxxxx";
 bool status;
 float temp, pres, alt;
 String postMessage;
@@ -84,18 +84,20 @@ void setup() {
     while (1);
   }
 
-  M5.setWakeupButton(BUTTON_A_PIN);
+  //M5.setWakeupButton(BUTTON_A_PIN);
 
   tickerSetHigh.attach_ms(10000, printHttps);
   tickerSetLow.attach_ms(500, printBME);
+
+  M5.Lcd.clear()
 }
 
 void loop() {
 
-  M5.update();
-  if (M5.BtnA.wasPressed()) {
-    M5.powerOFF();
-  }
+  //M5.update();
+  //if (M5.BtnA.wasPressed()) {
+  //  M5.powerOFF();
+  //}
 }
 
 void printBME() {
