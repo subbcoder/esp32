@@ -1,0 +1,74 @@
+TaskHandle_t Task1;
+TaskHandle_t Task2;
+
+// Контакты для светодиодов:
+const int led1 = 2;
+const int led2 = 4;
+
+void setup() {
+  Serial.begin(115200); 
+  pinMode(led1, OUTPUT);
+  pinMode(led2, OUTPUT);
+
+  // Создаем задачу с кодом из функции Task1code(),
+  // с приоритетом 1 и выполняемую на ядре 0:
+  xTaskCreatePinnedToCore(
+                    Task1code,   /* Функция задачи */
+                    "Task1",     /* Название задачи */
+                    10000,       /* Размер стека задачи */
+                    NULL,        /* Параметр задачи */
+                    1,           /* Приоритет задачи */
+                    &Task1,      /* Идентификатор задачи,
+                                    чтобы ее можно было отслеживать */
+                    0);          /* Ядро для выполнения задачи (0) */                  
+  delay(500); 
+
+  // Создаем задачу с кодом из функции Task2code(),
+  // с приоритетом 1 и выполняемую на ядре 1:
+  xTaskCreatePinnedToCore(
+                    Task2code,   /* Функция задачи */
+                    "Task2",     /* Название задачи */
+                    10000,       /* Размер стека задачи */
+                    NULL,        /* Параметр задачи */
+                    1,           /* Приоритет задачи */
+                    &Task2,      /* Идентификатор задачи,
+                                    чтобы ее можно было отслеживать */
+                    1);          /* Ядро для выполнения задачи (1) */
+    delay(500); 
+}
+
+// Функция Task1code: мигает светодиодом каждые 1000 мс:
+void Task1code( void * pvParameters ){
+  Serial.print("Task1 running on core ");
+           //  "Задача Task1 выполняется на ядре "
+  Serial.println(xPortGetCoreID());
+
+  for(;;){
+    digitalWrite(led1, HIGH);
+    delay(1000);
+    digitalWrite(led1, LOW);
+    delay(1000);
+  } 
+}
+
+// Функция Task2code: мигает светодиодом каждые 700 мс:
+void Task2code( void * pvParameters ){
+  Serial.print("Task2 running on core ");
+           //  "Задача Task2 выполняется на ядре "
+  Serial.println(xPortGetCoreID());
+
+  for(;;){
+    digitalWrite(led2, HIGH);
+    delay(700);
+    digitalWrite(led2, LOW);
+    delay(700);
+  }
+}
+
+void loop() {
+  
+}
+
+
+// Если вы во время выполнения кода хотите удалить созданную задачу, это можно сделать при помощи функции vTaskDelete(), указав в ее параметре идентификатор задачи (Task1):
+// vTaskDelete(Task1);
