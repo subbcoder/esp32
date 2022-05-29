@@ -1,0 +1,99 @@
+// ESP32 HUB75 LED Matrix Driver
+// http://tabak.aaa22.ru/viewtopic.php?id=48
+// https://www.hackster.io/news/the-esp32-hub75-led-matrix-driver-08827161ddc3
+// https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-I2S-DMA
+
+#include "DHTesp.h"
+#include <WiFi.h>
+#include <Adafruit_GFX.h>
+#include <P3RGB64x32MatrixPanel.h>
+#include <Fonts/FreeSansBold12pt7b.h>
+
+// constructor with default pin wiring
+P3RGB64x32MatrixPanel matrix;
+
+// use this constructor for custom pin wiring instead of the default above
+// these pins are an example, you may modify this according to your needs
+//P3RGB64x32MatrixPanel matrix(25, 26, 27, 21, 22, 23, 15, 32, 33, 12, 16, 17, 18);
+
+char ssid[] = "SSID";//ИМЯ СЕТИ WIFI
+char pass[] = "PASS";//ПАРОЛЬ СЕТИ
+
+#define TZ (+7*60*60) /*JST*/  //ТУТ УСТАНАВЛИВАЕТСЯ ЧАСОВОЙ ПОЯС +7 ЭТО ЧАСОВОЙ ПОЯС АЛТАЙСКОГО КРАЯ, МОСКВА +4 ЧАСА
+DHTesp dht;
+int dhtPin = 14; //ПОРТ К КОТОРОМУ ПРИПАЯН ВЫВОД ДАННЫХ ДАТЧИКА DHT11(НА ПЛАТЕ D14/GPIO14)
+
+void setup() {
+  Serial.begin(115200);
+  //dht.setup(14);
+  dht.setup(dhtPin, DHTesp::DHT11);
+  Serial.print("Attempting to connect to Network named: ");
+  Serial.println(ssid);                   // print the network name (SSID);
+
+  WiFi.begin(ssid, pass);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(2000);
+  }
+  Serial.println("");
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+
+  configTime(TZ, 0, "ntp.nict.jp", "ntp.jst.mfeed.ad.jp"); // enable NTP
+  //configTime(TZ, 4, "ntp4.stratum2.ru","ntp3.stratum2.ru");
+
+  matrix.begin();                           // setup the LED matrix
+}
+
+void loop()
+{
+  if (WiFi.status() != WL_CONNECTED)
+    ESP.restart();
+
+  time_t t;
+  static time_t last_t;
+  struct tm *tm;
+  static const char* const wd[7] = {"VOSKRES","PONEDELNIK","VTORNIK","SREDA","CHETVERG","PYTNINCA","SUBBOTA"};
+
+  t = time(NULL);
+  if (last_t == t) return; // draw each second
+  last_t = t;
+  tm = localtime(&t);
+  matrix.fillScreen(0);
+
+  matrix.setTextColor(matrix.color444(0, 1, 0));
+  matrix.setFont(&FreeSansBold12pt7b);
+  matrix.setCursor(3, 16);
+  matrix.printf("%02d:%02d", tm->tm_hour, tm->tm_min);
+
+  matrix.setFont();
+  //matrix.printf(":%02d", tm->tm_sec);
+
+  matrix.setCursor(2, 18);
+  matrix.setTextColor(tm->tm_wday == 0 ? matrix.color444(1, 0, 0) :
+                      tm->tm_wday == 6 ? matrix.color444(1, 1, 1) :
+                                         matrix.color444(0, 0, 1));
+  matrix.printf("%s", wd[tm->tm_wday]);
+
+  matrix.setCursor(2, 25);
+  matrix.setTextColor(matrix.color444(1, 0, 0));
+  matrix.printf("%02d/%02d/%04d\n",tm->tm_mday, tm->tm_mon+1, tm->tm_year+1900 );
+  matrix.swapBuffer(); // display the image written to the buffer
+  delay(2000);
+  float humidity = dht.getHumidity();
+  delay(2000);
+  float temperature = dht.getTemperature();
+  delay(2000);
+  matrix.fillScreen(0);
+  matrix.setCursor(0, 0);
+  matrix.setTextColor(matrix.color444(3, 3, 3));
+  matrix.print("Humidity - ");
+  matrix.print(humidity);
+  matrix.print("%");
+  matrix.setCursor(0, 17);
+  matrix.print("Temp. -    ");
+  matrix.print(temperature);
+  matrix.print(" C");
+  delay(10000);
+}
