@@ -1,0 +1,208 @@
+#include "NTPClient.h"
+#include "WiFi.h"
+#include "HTTPClient.h"
+#include "Wire.h"
+#include "Adafruit_Sensor.h"
+#include "Adafruit_BME280.h"
+#include "M5Stack.h"
+#include "Ticker.h"
+
+#define SEALEVELPRESSURE_HPA (1013.25)
+
+const long utcOffsetInSeconds = 3 * 60 * 60;
+
+WiFiUDP ntpUDP;
+
+NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
+
+Ticker tickerSetLow;
+Ticker tickerSetHigh;
+Ticker tickerSetTime;
+
+Adafruit_BME280 bme; // I2C
+
+const char* ssid = "smm";
+const char* password =  "xxxxxxxxxx";
+bool status;
+float temp, pres, alt;
+String postMessage;
+
+const char* root_ca= \
+"-----BEGIN CERTIFICATE-----\n" \
+"MIIFYDCCBEigAwIBAgIQQAF3ITfU6UK47naqPGQKtzANBgkqhkiG9w0BAQsFADA/\n" \
+"MSQwIgYDVQQKExtEaWdpdGFsIFNpZ25hdHVyZSBUcnVzdCBDby4xFzAVBgNVBAMT\n" \
+"DkRTVCBSb290IENBIFgzMB4XDTIxMDEyMDE5MTQwM1oXDTI0MDkzMDE4MTQwM1ow\n" \
+"TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh\n" \
+"cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwggIiMA0GCSqGSIb3DQEB\n" \
+"AQUAA4ICDwAwggIKAoICAQCt6CRz9BQ385ueK1coHIe+3LffOJCMbjzmV6B493XC\n" \
+"ov71am72AE8o295ohmxEk7axY/0UEmu/H9LqMZshftEzPLpI9d1537O4/xLxIZpL\n" \
+"wYqGcWlKZmZsj348cL+tKSIG8+TA5oCu4kuPt5l+lAOf00eXfJlII1PoOK5PCm+D\n" \
+"LtFJV4yAdLbaL9A4jXsDcCEbdfIwPPqPrt3aY6vrFk/CjhFLfs8L6P+1dy70sntK\n" \
+"4EwSJQxwjQMpoOFTJOwT2e4ZvxCzSow/iaNhUd6shweU9GNx7C7ib1uYgeGJXDR5\n" \
+"bHbvO5BieebbpJovJsXQEOEO3tkQjhb7t/eo98flAgeYjzYIlefiN5YNNnWe+w5y\n" \
+"sR2bvAP5SQXYgd0FtCrWQemsAXaVCg/Y39W9Eh81LygXbNKYwagJZHduRze6zqxZ\n" \
+"Xmidf3LWicUGQSk+WT7dJvUkyRGnWqNMQB9GoZm1pzpRboY7nn1ypxIFeFntPlF4\n" \
+"FQsDj43QLwWyPntKHEtzBRL8xurgUBN8Q5N0s8p0544fAQjQMNRbcTa0B7rBMDBc\n" \
+"SLeCO5imfWCKoqMpgsy6vYMEG6KDA0Gh1gXxG8K28Kh8hjtGqEgqiNx2mna/H2ql\n" \
+"PRmP6zjzZN7IKw0KKP/32+IVQtQi0Cdd4Xn+GOdwiK1O5tmLOsbdJ1Fu/7xk9TND\n" \
+"TwIDAQABo4IBRjCCAUIwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYw\n" \
+"SwYIKwYBBQUHAQEEPzA9MDsGCCsGAQUFBzAChi9odHRwOi8vYXBwcy5pZGVudHJ1\n" \
+"c3QuY29tL3Jvb3RzL2RzdHJvb3RjYXgzLnA3YzAfBgNVHSMEGDAWgBTEp7Gkeyxx\n" \
+"+tvhS5B1/8QVYIWJEDBUBgNVHSAETTBLMAgGBmeBDAECATA/BgsrBgEEAYLfEwEB\n" \
+"ATAwMC4GCCsGAQUFBwIBFiJodHRwOi8vY3BzLnJvb3QteDEubGV0c2VuY3J5cHQu\n" \
+"b3JnMDwGA1UdHwQ1MDMwMaAvoC2GK2h0dHA6Ly9jcmwuaWRlbnRydXN0LmNvbS9E\n" \
+"U1RST09UQ0FYM0NSTC5jcmwwHQYDVR0OBBYEFHm0WeZ7tuXkAXOACIjIGlj26Ztu\n" \
+"MA0GCSqGSIb3DQEBCwUAA4IBAQAKcwBslm7/DlLQrt2M51oGrS+o44+/yQoDFVDC\n" \
+"5WxCu2+b9LRPwkSICHXM6webFGJueN7sJ7o5XPWioW5WlHAQU7G75K/QosMrAdSW\n" \
+"9MUgNTP52GE24HGNtLi1qoJFlcDyqSMo59ahy2cI2qBDLKobkx/J3vWraV0T9VuG\n" \
+"WCLKTVXkcGdtwlfFRjlBz4pYg1htmf5X6DYO8A4jqv2Il9DjXA6USbW1FzXSLr9O\n" \
+"he8Y4IWS6wY7bCkjCWDcRQJMEhg76fsO3txE+FiYruq9RUWhiF1myv4Q6W+CyBFC\n" \
+"Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5\n" \
+"-----END CERTIFICATE-----\n";
+
+void setup() {
+ 
+  Serial.begin(115200);
+  delay(1000);
+   
+  M5.begin(); //Init M5Core. Initialize M5Core
+  M5.Power.begin(); //Init Power module. Initialize the power module
+
+  M5.Lcd.setTextSize(1); // задать размер текста
+  
+  WiFi.begin(ssid, password); 
+ 
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi");
+    M5.Lcd.clear();
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.print("Connecting to WiFi");
+  }
+ 
+  Serial.println("Connected to the WiFi network");
+
+  // запуск датчика и проверка на работоспособность
+  status = bme.begin(0x76); 
+  if (!status) {
+    Serial.println("Could not find a valid BME280 sensor, check wiring!");
+    M5.Lcd.clear();
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.print("Could not find a valid BME280 sensor");
+    while (1);
+  }
+
+  //M5.setWakeupButton(BUTTON_A_PIN);
+
+  tickerSetHigh.attach_ms(10000, printHttps);
+  tickerSetLow.attach_ms(500, printBME);
+  tickerSetTime.attach_ms(1000, printNTP); 
+
+  timeClient.begin();
+
+  M5.Lcd.clear();
+}
+
+void loop() {
+  //if (M5.BtnA.wasPressed()) {
+  //  M5.powerOFF();
+  //}
+  if(M5.BtnA.wasPressed()) {
+    M5.Lcd.setCursor(20, 200);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
+    M5.Lcd.print("A was pressed");
+  }
+
+  if(M5.BtnB.wasPressed())
+  {
+    M5.Lcd.setCursor(20, 200);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
+    M5.Lcd.print("B was pressed");
+  }
+
+  if(M5.BtnC.wasPressed())
+  {
+    M5.Lcd.setCursor(20, 200);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
+    M5.Lcd.print("C was pressed");
+  }
+
+  M5.update();
+}
+
+void printBME() {
+  temp = bme.readTemperature();
+  pres = bme.readPressure() / 100.0F * 0.75006375541921;
+  alt = bme.readAltitude(SEALEVELPRESSURE_HPA);
+
+  printDisplay();    
+}
+
+void printHttps() {
+  if ((WiFi.status() == WL_CONNECTED)) { //Check the current connection status
+ 
+    HTTPClient http;
+
+    // postMessage = "status=" + ADCData + "&station=" + station;
+    
+    http.begin("https://admin.subbnet.ru/api/post", root_ca); //Specify the URL and certificate
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded", false, true); 
+    //http.addHeader("dataType", "text"); 
+    
+    int httpCode = http.POST("userId=" + String(temp, 3) + "&userName=" + String(pres, 3));                                                  //Make the request
+ 
+    if (httpCode > 0) { //Check for the returning code
+ 
+        String payload = http.getString();
+        Serial.println(httpCode);
+        Serial.println(payload);
+    }
+     
+    else {
+      Serial.println("Error on HTTP request");
+    }
+ 
+    http.end(); //Free the resources
+  }  
+
+
+  printSerial();
+}
+
+void printNTP() {
+  timeClient.update();
+
+  M5.Lcd.setCursor(20, 10);
+  M5.Lcd.setTextSize(6);
+  M5.Lcd.setTextColor(TFT_YELLOW, TFT_BLACK);
+  M5.Lcd.print(timeClient.getFormattedTime());
+}
+
+void printDisplay() {
+  //M5.Lcd.clear();
+  //M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setTextSize(4);
+  M5.Lcd.setCursor(10, 80);
+  M5.Lcd.print(String(temp, 1) + " *C");
+  M5.Lcd.setCursor(10, 120);
+  M5.Lcd.print(String(pres, 1) + " mm");
+}
+
+void printSerial() {
+  Serial.print("Temperature = ");
+  Serial.print(temp);
+  Serial.println(" *C");
+
+  Serial.print("Pressure = ");
+  Serial.print(pres);
+  Serial.println(" mm ртст");
+
+  Serial.print("Approx. Altitude = ");
+  Serial.print(alt);
+  Serial.println(" m");
+
+  Serial.println();
+}
