@@ -22,7 +22,7 @@ Ticker tickerSetTime;
 Adafruit_BME280 bme; // I2C
 
 const char* ssid = "smm";
-const char* password =  "xxxxxxxxx";
+const char* password =  "xxxxxxxxxx";
 bool status;
 float temp, pres, alt;
 String postMessage;
@@ -108,17 +108,26 @@ void loop() {
   //  M5.powerOFF();
   //}
   if(M5.BtnA.wasPressed()) {
-
+    M5.Lcd.setCursor(20, 200);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
+    M5.Lcd.print("A was pressed");
   }
 
   if(M5.BtnB.wasPressed())
   {
-
+    M5.Lcd.setCursor(20, 200);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
+    M5.Lcd.print("B was pressed");
   }
 
   if(M5.BtnC.wasPressed())
   {
-
+    M5.Lcd.setCursor(20, 200);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextColor(TFT_RED, TFT_BLACK);
+    M5.Lcd.print("C was pressed");
   }
 
   M5.update();
