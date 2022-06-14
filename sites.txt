@@ -1,4 +1,4 @@
 https://docs.m5stack.com/en/api/core/system
 http://developer.alexanderklimov.ru/arduino/m5stack/pwm.php
 https://shop.m5stack.com/
-
+https://voltiq.ru/esp32-dual-core-arduino-ide/    Мультизадачность на ESP32 (Arduino IDE)
